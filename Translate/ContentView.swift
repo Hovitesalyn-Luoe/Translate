@@ -3,19 +3,31 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var translator: Translator
     @State private var selectedRecord: TranslationRecord?
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var showSidebar = true
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            SidebarView(selection: $selectedRecord)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 235, max: 320)
-        } detail: {
+        HStack(spacing: 0) {
+            if showSidebar {
+                SidebarView(selection: $selectedRecord)
+                    .frame(width: 232)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                Divider()
+            }
             TranslationView()
         }
-        .navigationSplitViewStyle(.balanced)
-        // 侧边栏收起/展开时不要给整窗做隐式动画，否则正文会闪一下
-        .transaction(value: columnVisibility) { transaction in
-            transaction.disablesAnimations = true
+        .frame(minWidth: 640, minHeight: 460)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showSidebar.toggle()
+                    }
+                } label: {
+                    Image(systemName: "sidebar.left")
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .help(showSidebar ? "隐藏边栏" : "显示边栏")
+            }
         }
         .onChange(of: selectedRecord) { _, newValue in
             guard let record = newValue else { return }
@@ -171,8 +183,8 @@ struct SourceArea: View {
                 Text("输入或粘贴要翻译的文字")
                     .font(.system(size: 21))
                     .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 17)
-                    .padding(.top, 7)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 8.5)
                     .padding(.bottom, 12)
                     .allowsHitTesting(false)
             }

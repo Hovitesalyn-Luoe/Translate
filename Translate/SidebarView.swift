@@ -53,7 +53,8 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .navigationSplitViewColumnWidth(min: 200, ideal: 235, max: 320)
+        .scrollContentBackground(.hidden)
+        .background(.regularMaterial)
     }
 
     private func emptyRow(_ text: String) -> some View {
@@ -83,6 +84,8 @@ struct RecordRow: View {
 
                 Text(Self.timeLabel(record.date))
                     .foregroundStyle(.tertiary)
+                    .frame(width: 58, alignment: .trailing)
+                    .layoutPriority(1)
             }
             .font(.system(size: 10))
             .foregroundStyle(.secondary)
