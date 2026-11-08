@@ -11,7 +11,9 @@ struct ContentView: View {
                 SidebarView(selection: $selectedRecord)
                     .frame(width: 232)
                     .transition(.move(edge: .leading).combined(with: .opacity))
-                Divider()
+                Rectangle()
+                    .fill(Color(nsColor: .separatorColor))
+                    .frame(width: 1)
             }
             TranslationView()
         }
@@ -44,6 +46,7 @@ struct ContentView: View {
 struct TranslationView: View {
     @EnvironmentObject private var translator: Translator
     @FocusState private var sourceFocused: Bool
+    @State private var didAutoFocus = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -69,6 +72,14 @@ struct TranslationView: View {
         .onAppear {
             // 窗口还没成为 key window 时设 FocusState 不生效，等一拍再聚焦
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                sourceFocused = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            // 窗口第一次拿到焦点时把光标放进输入框，免得还要手点一下
+            guard !didAutoFocus else { return }
+            didAutoFocus = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 sourceFocused = true
             }
         }
@@ -183,8 +194,8 @@ struct SourceArea: View {
                 Text("输入或粘贴要翻译的文字")
                     .font(.system(size: 21))
                     .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 14)
-                    .padding(.top, 8.5)
+                    .padding(.horizontal, 11)
+                    .padding(.top, 12.5)
                     .padding(.bottom, 12)
                     .allowsHitTesting(false)
             }
