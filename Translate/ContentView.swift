@@ -178,6 +178,7 @@ struct LanguagePill: View {
 struct SourceArea: View {
     @EnvironmentObject private var translator: Translator
     var focused: FocusState<Bool>.Binding
+    @State private var editorHasText = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -186,21 +187,30 @@ struct SourceArea: View {
                 .lineSpacing(4)
                 .scrollContentBackground(.hidden)
                 .focused(focused)
-                .padding(.horizontal, 14)
+                .onReceive(NotificationCenter.default.publisher(for: NSText.didChangeNotification)) { note in
+                    guard let textView = note.object as? NSTextView else { return }
+                    let hasText = !textView.string.isEmpty
+                    if hasText != editorHasText { editorHasText = hasText }
+                }
+                .padding(.horizontal, 11)
                 .padding(.vertical, 12)
 
-            if translator.sourceText.isEmpty {
+            if !editorHasText {
                 // 和 TextEditor 里文字的实际起点对齐：14 容器边距 + 5 文本容器内边距
                 Text("输入或粘贴要翻译的文字")
                     .font(.system(size: 21))
                     .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 11)
-                    .padding(.top, 12.5)
+                    .padding(.horizontal, 16.5)
+                    .padding(.top, 12)
                     .padding(.bottom, 12)
                     .allowsHitTesting(false)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity, alignment: .topLeading)
+        .onAppear { editorHasText = !translator.sourceText.isEmpty }
+        .onChange(of: translator.sourceText) { _, newValue in
+            if newValue.isEmpty && editorHasText { editorHasText = false }
+        }
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(nsColor: .textBackgroundColor))

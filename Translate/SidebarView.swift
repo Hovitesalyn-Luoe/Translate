@@ -54,7 +54,6 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
-        .background(.regularMaterial)
     }
 
     private func emptyRow(_ text: String) -> some View {
