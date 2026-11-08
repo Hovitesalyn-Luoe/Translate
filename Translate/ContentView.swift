@@ -189,16 +189,6 @@ struct SourceArea: View {
                 .padding(.horizontal, 11)
                 .padding(.vertical, 12)
 
-            if translator.sourceText.isEmpty {
-                // 和 TextEditor 里文字的实际起点对齐：14 容器边距 + 5 文本容器内边距
-                Text("输入或粘贴要翻译的文字")
-                    .font(.system(size: 21))
-                    .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 16.5)
-                    .padding(.top, 12)
-                    .padding(.bottom, 12)
-                    .allowsHitTesting(false)
-            }
         }
         .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity, alignment: .topLeading)
         .background(
