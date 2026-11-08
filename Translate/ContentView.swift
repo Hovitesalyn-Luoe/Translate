@@ -13,6 +13,10 @@ struct ContentView: View {
             TranslationView()
         }
         .navigationSplitViewStyle(.balanced)
+        // 侧边栏收起/展开时不要给整窗做隐式动画，否则正文会闪一下
+        .transaction(value: columnVisibility) { transaction in
+            transaction.disablesAnimations = true
+        }
         .onChange(of: selectedRecord) { _, newValue in
             guard let record = newValue else { return }
             translator.load(record)
@@ -167,8 +171,9 @@ struct SourceArea: View {
                 Text("输入或粘贴要翻译的文字")
                     .font(.system(size: 21))
                     .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 19)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, 17)
+                    .padding(.top, 7)
+                    .padding(.bottom, 12)
                     .allowsHitTesting(false)
             }
         }

@@ -103,7 +103,13 @@ final class Translator: ObservableObject {
 
     func triggerTranslation() {
         let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty else {
+            // 输入清空后别留着上一次的译文或报错
+            if !translatedText.isEmpty { translatedText = "" }
+            if errorMessage != nil { errorMessage = nil }
+            if successMessage != nil { successMessage = nil }
+            return
+        }
 
         let source = sourceLanguage
         let target = targetLanguage
