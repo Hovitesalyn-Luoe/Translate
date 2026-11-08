@@ -13,6 +13,11 @@ struct TranslateApp: App {
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
         .defaultSize(width: 780, height: 620)
+
+        Settings {
+            SettingsView()
+                .environmentObject(translator)
+        }
         .commands {
             CommandGroup(replacing: .newItem) {}
 
@@ -51,6 +56,46 @@ struct TranslateApp: App {
                 }
                 .keyboardShortcut(.delete, modifiers: [.command])
             }
+        }
+    }
+}
+
+struct SettingsView: View {
+    @EnvironmentObject private var translator: Translator
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("目标语言", selection: $translator.targetLanguageIdentifier) {
+                    ForEach(translator.supportedLanguages, id: \.self) { identifier in
+                        Text(LanguageCatalog.displayName(for: identifier)).tag(identifier)
+                    }
+                }
+                Toggle("边打边翻", isOn: $translator.autoTranslateEnabled)
+                Text("关掉之后，输入时不会自动翻译，按 ⌘↵ 手动翻。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("翻译")
+            }
+
+            Section {
+                HStack(spacing: 12) {
+                    Button("清空历史记录") {
+                        translator.clearHistory()
+                    }
+                    Button("清空收藏") {
+                        translator.clearFavorites()
+                    }
+                }
+            } header: {
+                Text("数据")
+            }
+        }
+        .formStyle(.grouped)
+        .frame(width: 440, height: 300)
+        .onChange(of: translator.targetLanguageIdentifier) { _, _ in
+            translator.triggerTranslation()
         }
     }
 }

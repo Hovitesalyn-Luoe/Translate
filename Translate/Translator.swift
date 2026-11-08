@@ -16,8 +16,15 @@ final class Translator: ObservableObject {
 
     @Published var translatedText: String = ""
     @Published var sourceLanguageIdentifier: String? = nil   // nil = 自动检测
-    @Published var targetLanguageIdentifier: String = "zh-Hans"
+    @Published var targetLanguageIdentifier: String = "zh-Hans" {
+        didSet { UserDefaults.standard.set(targetLanguageIdentifier, forKey: Keys.targetLanguage) }
+    }
     @Published var detectedLanguageIdentifier: String? = nil
+
+    /// 边打边翻：关掉之后只有 ⌘↵ 手动触发
+    @Published var autoTranslateEnabled: Bool = true {
+        didSet { UserDefaults.standard.set(autoTranslateEnabled, forKey: Keys.autoTranslate) }
+    }
 
     // MARK: - 运行状态
 
@@ -41,9 +48,17 @@ final class Translator: ObservableObject {
     private enum Keys {
         static let history = "translate.history"
         static let favorites = "translate.favorites"
+        static let targetLanguage = "translate.targetLanguage"
+        static let autoTranslate = "translate.autoTranslate"
     }
 
     init() {
+        if let saved = UserDefaults.standard.string(forKey: Keys.targetLanguage), !saved.isEmpty {
+            targetLanguageIdentifier = saved
+        }
+        if let saved = UserDefaults.standard.object(forKey: Keys.autoTranslate) as? Bool {
+            autoTranslateEnabled = saved
+        }
         loadStore()
         Task { await loadSupportedLanguages() }
     }
@@ -94,6 +109,7 @@ final class Translator: ObservableObject {
             errorMessage = nil
             return
         }
+        guard autoTranslateEnabled else { return }
         debounceTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(450))
             guard let self, !Task.isCancelled else { return }
@@ -290,6 +306,16 @@ final class Translator: ObservableObject {
         translatedText = record.translatedText
         sourceText = record.sourceText
         debounceTask?.cancel()
+    }
+
+    func clearHistory() {
+        history.removeAll()
+        saveStore()
+    }
+
+    func clearFavorites() {
+        favorites.removeAll()
+        saveStore()
     }
 
     func removeFromHistory(_ record: TranslationRecord) {
