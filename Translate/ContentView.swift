@@ -52,27 +52,7 @@ struct TranslationView: View {
     @EnvironmentObject private var translator: Translator
     @FocusState private var sourceFocused: Bool
     @State private var didAutoFocus = false
-    /// VSplitView 不暴露初始分隔位置，这里等它布局完，直接找底下的 NSSplitView 摆回去
-    private func restoreSplitPosition() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            guard let window = NSApp.windows.first(where: { $0.isVisible }),
-                  let split = Self.findSplitView(in: window.contentView) else { return }
-            // 让 NSSplitView 自己记住分隔位置，比手动记录可靠
-            if split.autosaveName == nil {
-                split.autosaveName = NSSplitView.AutosaveName("TranslateSplit")
-            }
-        }
-    }
-
-    private static func findSplitView(in view: NSView?) -> NSSplitView? {
-        guard let view else { return nil }
-        if let split = view as? NSSplitView { return split }
-        for sub in view.subviews {
-            if let found = findSplitView(in: sub) { return found }
-        }
-        return nil
-    }
-
+    @AppStorage("translate.sourceHeight") private var sourceHeight: Double = 210
     var body: some View {
         VStack(spacing: 0) {
             LanguageBar()
@@ -80,13 +60,42 @@ struct TranslationView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 9)
 
-            VSplitView {
-                SourceArea(focused: $sourceFocused)
-                    .frame(minHeight: 40, maxHeight: .infinity)
-                TargetArea()
-                    .frame(minHeight: 40, maxHeight: .infinity)
+            GeometryReader { geo in
+                let minimum: CGFloat = 58
+                let upper = max(minimum, geo.size.height - minimum - 11)
+                let current = min(max(minimum, CGFloat(sourceHeight)), upper)
+                let topInGlobal = geo.frame(in: .global).minY
+                VStack(spacing: 0) {
+                    SourceArea(focused: $sourceFocused)
+                        .frame(height: current)
+                        .clipped()
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.10))
+                        .frame(height: 1)
+                        .overlay(
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(height: 11)
+                                .contentShape(Rectangle())
+                                .onContinuousHover { phase in
+                                    switch phase {
+                                    case .active: NSCursor.resizeUpDown.set()
+                                    case .ended: NSCursor.arrow.set()
+                                    }
+                                }
+                                .gesture(
+                                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                                        .onChanged { value in
+                                            // 直接用鼠标的绝对位置算分割线高度，永远跟手
+                                            let raw = value.location.y - topInGlobal
+                                            sourceHeight = Double(min(max(minimum, raw), upper))
+                                        }
+                                )
+                        )
+                    TargetArea()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
-            .onAppear(perform: restoreSplitPosition)
             .background(Color(nsColor: .textBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
@@ -224,7 +233,7 @@ struct SourceArea: View {
                 .padding(.vertical, 12)
 
         }
-        .frame(maxWidth: .infinity, minHeight: 40, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 58, maxHeight: .infinity, alignment: .topLeading)
         .overlay(alignment: .bottomTrailing) {
             if !translator.sourceText.isEmpty {
                 Text("\(translator.sourceText.count) 字")
