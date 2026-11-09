@@ -9,26 +9,23 @@ struct ContentView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            if showSidebar {
-                HStack(spacing: 0) {
-                    SidebarView(selection: $selectedRecord)
-                        .frame(width: 232)
-                    Rectangle()
-                        .fill(Color(nsColor: .separatorColor))
-                        .frame(width: 1)
-                }
-                .transition(.move(edge: .leading).combined(with: .opacity))
-            }
+            SidebarView(selection: $selectedRecord)
+                .frame(width: 232)
+                .frame(width: showSidebar ? 232 : 0, alignment: .leading)
+                .clipped()
+                .opacity(showSidebar ? 1 : 0)
+            Rectangle()
+                .fill(Color(nsColor: .separatorColor))
+                .frame(width: showSidebar ? 1 : 0)
             TranslationView()
         }
+        .animation(.smooth(duration: 0.26), value: showSidebar)
         .frame(minWidth: 640, minHeight: 120)
         .background(WindowConfigurator(remember: rememberWindow).frame(width: 0, height: 0))
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button {
-                    withAnimation(.smooth(duration: 0.26)) {
-                        showSidebar.toggle()
-                    }
+                    showSidebar.toggle()
                 } label: {
                     Image(systemName: "sidebar.left")
                         .font(.system(size: 14, weight: .medium))
