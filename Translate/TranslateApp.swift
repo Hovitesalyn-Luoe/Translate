@@ -8,7 +8,7 @@ struct TranslateApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(translator)
-                .frame(minWidth: 620, minHeight: 170)
+                .frame(minWidth: 620, minHeight: 120)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: false))

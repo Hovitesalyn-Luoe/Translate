@@ -19,7 +19,7 @@ struct ContentView: View {
             }
             TranslationView()
         }
-        .frame(minWidth: 640, minHeight: 170)
+        .frame(minWidth: 640, minHeight: 120)
         .background(WindowConfigurator(remember: rememberWindow).frame(width: 0, height: 0))
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -79,7 +79,7 @@ struct TranslationView: View {
                     .onChanged { value in
                         if dragStartHeight == nil { dragStartHeight = sourceHeight }
                         let base = dragStartHeight ?? sourceHeight
-                        sourceHeight = min(max(60, base + value.translation.height), upperBound)
+                        sourceHeight = min(max(40, base + value.translation.height), upperBound)
                     }
                     .onEnded { _ in dragStartHeight = nil }
             )
@@ -89,14 +89,14 @@ struct TranslationView: View {
         VStack(spacing: 0) {
             LanguageBar()
                 .padding(.horizontal, 22)
-                .padding(.top, 18)
-                .padding(.bottom, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 9)
 
             GeometryReader { geo in
-                let upperBound = max(60, geo.size.height - 14 - 60)
+                let upperBound = max(40, geo.size.height - 14 - 40)
                 VStack(spacing: 0) {
                     SourceArea(focused: $sourceFocused)
-                        .frame(height: min(max(60, sourceHeight), upperBound))
+                        .frame(height: min(max(40, sourceHeight), upperBound))
                     splitHandle(upperBound: upperBound)
                     TargetArea()
                         .frame(maxHeight: .infinity)
@@ -108,8 +108,8 @@ struct TranslationView: View {
 
             BottomBar()
                 .padding(.horizontal, 22)
-                .padding(.bottom, 16)
-                .padding(.top, 8)
+                .padding(.bottom, 12)
+                .padding(.top, 6)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
@@ -233,7 +233,7 @@ struct SourceArea: View {
                 .padding(.vertical, 12)
 
         }
-        .frame(maxWidth: .infinity, minHeight: 60, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 40, maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(nsColor: .textBackgroundColor))
@@ -260,25 +260,28 @@ struct TargetArea: View {
     @EnvironmentObject private var translator: Translator
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                if translator.translatedText.isEmpty {
-                    Text(translator.errorMessage ?? "译文会出现在这里")
-                        .font(.system(size: 21))
-                        .foregroundStyle(translator.errorMessage == nil ? Color.secondary : Color.orange)
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                } else {
-                    Text(translator.translatedText)
-                        .font(.system(size: 21, weight: .regular))
-                        .lineSpacing(4)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
+        ZStack(alignment: .leading) {
+            if translator.translatedText.isEmpty {
+                Text(translator.errorMessage ?? "译文会出现在这里")
+                    .font(.system(size: 21))
+                    .foregroundStyle(translator.errorMessage == nil ? Color.secondary : Color.orange)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(translator.translatedText)
+                            .font(.system(size: 21, weight: .regular))
+                            .lineSpacing(4)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
         }
-        .frame(maxWidth: .infinity, minHeight: 60, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 40, maxHeight: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color.accentColor.opacity(0.06))
