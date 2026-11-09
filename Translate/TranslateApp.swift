@@ -63,7 +63,7 @@ struct TranslateApp: App {
 struct SettingsView: View {
     @EnvironmentObject private var translator: Translator
     @AppStorage("translate.rememberWindow") private var rememberWindow = true
-    @AppStorage("translate.showSidebar") private var rememberSidebar = true
+    @AppStorage("translate.rememberSidebar") private var rememberSidebar = true
 
     var body: some View {
         Form {

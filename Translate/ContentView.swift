@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject private var translator: Translator
     @State private var selectedRecord: TranslationRecord?
     @AppStorage("translate.showSidebar") private var showSidebar = true
+    @AppStorage("translate.rememberSidebar") private var rememberSidebar = true
     @AppStorage("translate.rememberWindow") private var rememberWindow = true
 
     var body: some View {
@@ -32,6 +33,9 @@ struct ContentView: View {
                 }
                 .help(showSidebar ? "隐藏边栏" : "显示边栏")
             }
+        }
+        .onAppear {
+            if !rememberSidebar { showSidebar = true }
         }
         .onChange(of: selectedRecord) { _, newValue in
             guard let record = newValue else { return }
