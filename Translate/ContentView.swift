@@ -10,12 +10,14 @@ struct ContentView: View {
     var body: some View {
         HStack(spacing: 0) {
             if showSidebar {
-                SidebarView(selection: $selectedRecord)
-                    .frame(width: 232)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-                Rectangle()
-                    .fill(Color(nsColor: .separatorColor))
-                    .frame(width: 1)
+                HStack(spacing: 0) {
+                    SidebarView(selection: $selectedRecord)
+                        .frame(width: 232)
+                    Rectangle()
+                        .fill(Color(nsColor: .separatorColor))
+                        .frame(width: 1)
+                }
+                .transition(.move(edge: .leading).combined(with: .opacity))
             }
             TranslationView()
         }
@@ -24,7 +26,7 @@ struct ContentView: View {
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.smooth(duration: 0.26)) {
                         showSidebar.toggle()
                     }
                 } label: {
@@ -54,6 +56,27 @@ struct TranslationView: View {
     @FocusState private var sourceFocused: Bool
     @State private var didAutoFocus = false
     @AppStorage("translate.sourceHeight") private var sourceHeight: Double = 200
+    /// VSplitView 不暴露初始分隔位置，这里等它布局完，直接找底下的 NSSplitView 摆回去
+    private func restoreSplitPosition() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            guard let window = NSApp.windows.first(where: { $0.isVisible }),
+                  let split = Self.findSplitView(in: window.contentView) else { return }
+            let total = split.bounds.height
+            guard total > 60 else { return }
+            let target = min(max(40, CGFloat(sourceHeight)), total - 40)
+            split.setPosition(target, ofDividerAt: 0)
+        }
+    }
+
+    private static func findSplitView(in view: NSView?) -> NSSplitView? {
+        guard let view else { return nil }
+        if let split = view as? NSSplitView { return split }
+        for sub in view.subviews {
+            if let found = findSplitView(in: sub) { return found }
+        }
+        return nil
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             LanguageBar()
@@ -63,15 +86,20 @@ struct TranslationView: View {
 
             VSplitView {
                 SourceArea(focused: $sourceFocused)
-                    .frame(minHeight: 40, idealHeight: CGFloat(sourceHeight), maxHeight: .infinity)
-                    .padding(.bottom, 5)
+                    .frame(minHeight: 40, maxHeight: .infinity)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { newHeight in
                         if newHeight > 39 { sourceHeight = Double(newHeight) }
                     }
                 TargetArea()
                     .frame(minHeight: 40, maxHeight: .infinity)
-                    .padding(.top, 5)
             }
+            .onAppear(perform: restoreSplitPosition)
+            .background(Color(nsColor: .textBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.08))
+            )
             .padding(.horizontal, 22)
 
             Spacer(minLength: 0)
@@ -204,14 +232,6 @@ struct SourceArea: View {
 
         }
         .frame(maxWidth: .infinity, minHeight: 40, maxHeight: .infinity, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(nsColor: .textBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.08))
-        )
         .overlay(alignment: .bottomTrailing) {
             if !translator.sourceText.isEmpty {
                 Text("\(translator.sourceText.count) 字")
@@ -252,14 +272,7 @@ struct TargetArea: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 40, maxHeight: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.accentColor.opacity(0.06))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.accentColor.opacity(0.12))
-        )
+        .background(Color.accentColor.opacity(0.06))
     }
 }
 
