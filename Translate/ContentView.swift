@@ -67,15 +67,16 @@ struct TranslationView: View {
                     .fill(Color.primary.opacity(0.16))
                     .frame(width: 36, height: 4)
             }
-            .onHover { inside in
-                if inside {
-                    NSCursor.resizeUpDown.push()
-                } else {
-                    NSCursor.pop()
+            .onContinuousHover { phase in
+                switch phase {
+                case .active:
+                    NSCursor.resizeUpDown.set()
+                case .ended:
+                    NSCursor.arrow.set()
                 }
             }
             .gesture(
-                DragGesture(minimumDistance: 0)
+                DragGesture(minimumDistance: 0, coordinateSpace: .global)
                     .onChanged { value in
                         if dragStartHeight == nil { dragStartHeight = sourceHeight }
                         let base = dragStartHeight ?? sourceHeight
