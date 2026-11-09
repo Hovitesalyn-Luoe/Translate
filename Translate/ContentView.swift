@@ -3,7 +3,8 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var translator: Translator
     @State private var selectedRecord: TranslationRecord?
-    @State private var showSidebar = true
+    @AppStorage("translate.showSidebar") private var showSidebar = true
+    @AppStorage("translate.rememberWindow") private var rememberWindow = true
 
     var body: some View {
         HStack(spacing: 0) {
@@ -17,7 +18,8 @@ struct ContentView: View {
             }
             TranslationView()
         }
-        .frame(minWidth: 640, minHeight: 460)
+        .frame(minWidth: 640, minHeight: 170)
+        .background(WindowConfigurator(remember: rememberWindow).frame(width: 0, height: 0))
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button {
@@ -47,6 +49,37 @@ struct TranslationView: View {
     @EnvironmentObject private var translator: Translator
     @FocusState private var sourceFocused: Bool
     @State private var didAutoFocus = false
+    @State private var sourceHeight: CGFloat = 200
+    @State private var dragStartHeight: CGFloat?
+
+    /// 输入框和译文框之间的分隔条：上下拖动调高度
+    private func splitHandle(upperBound: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(height: 14)
+            .contentShape(Rectangle())
+            .overlay {
+                Capsule()
+                    .fill(Color.primary.opacity(0.16))
+                    .frame(width: 36, height: 4)
+            }
+            .onHover { inside in
+                if inside {
+                    NSCursor.resizeUpDown.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        if dragStartHeight == nil { dragStartHeight = sourceHeight }
+                        let base = dragStartHeight ?? sourceHeight
+                        sourceHeight = min(max(60, base + value.translation.height), upperBound)
+                    }
+                    .onEnded { _ in dragStartHeight = nil }
+            )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,9 +88,15 @@ struct TranslationView: View {
                 .padding(.top, 18)
                 .padding(.bottom, 14)
 
-            VStack(spacing: 12) {
-                SourceArea(focused: $sourceFocused)
-                TargetArea()
+            GeometryReader { geo in
+                let upperBound = max(60, geo.size.height - 14 - 60)
+                VStack(spacing: 0) {
+                    SourceArea(focused: $sourceFocused)
+                        .frame(height: min(max(60, sourceHeight), upperBound))
+                    splitHandle(upperBound: upperBound)
+                    TargetArea()
+                        .frame(maxHeight: .infinity)
+                }
             }
             .padding(.horizontal, 22)
 
@@ -190,7 +229,7 @@ struct SourceArea: View {
                 .padding(.vertical, 12)
 
         }
-        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 60, maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(nsColor: .textBackgroundColor))
@@ -235,7 +274,7 @@ struct TargetArea: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
         }
-        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 60, maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color.accentColor.opacity(0.06))
@@ -323,4 +362,31 @@ struct ToolButton: View {
         .onHover { hovering = $0 }
         .help(help)
     }
+}
+
+/// 拿到底层 NSWindow，交给 AppKit 自己记 frame / 位置
+struct WindowConfigurator: NSViewRepresentable {
+    var remember: Bool
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        DispatchQueue.main.async {
+            guard let window = view.window else { return }
+            let name = NSWindow.FrameAutosaveName("TranslateMainWindow")
+            if remember {
+                _ = window.setFrameUsingName(name)
+                window.setFrameAutosaveName(name)
+            } else {
+                window.setFrameAutosaveName("")
+                UserDefaults.standard.removeObject(forKey: "NSWindow Frame \(name)")
+                let screen = window.screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+                let size = NSSize(width: 780, height: 620)
+                let origin = NSPoint(x: screen.midX - size.width / 2, y: screen.midY - size.height / 2)
+                window.setFrame(NSRect(origin: origin, size: size), display: true)
+            }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }

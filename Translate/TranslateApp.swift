@@ -8,7 +8,7 @@ struct TranslateApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(translator)
-                .frame(minWidth: 620, minHeight: 460)
+                .frame(minWidth: 620, minHeight: 170)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
@@ -62,6 +62,8 @@ struct TranslateApp: App {
 
 struct SettingsView: View {
     @EnvironmentObject private var translator: Translator
+    @AppStorage("translate.rememberWindow") private var rememberWindow = true
+    @AppStorage("translate.showSidebar") private var rememberSidebar = true
 
     var body: some View {
         Form {
@@ -80,6 +82,16 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("记住窗口大小和位置", isOn: $rememberWindow)
+                Toggle("记住侧边栏开合", isOn: $rememberSidebar)
+                Text("关掉之后，下次打开回到默认的窗口大小。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("窗口")
+            }
+
+            Section {
                 HStack(spacing: 12) {
                     Button("清空历史记录") {
                         translator.clearHistory()
@@ -93,7 +105,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440, height: 300)
+        .frame(width: 440, height: 400)
         .onChange(of: translator.targetLanguageIdentifier) { _, _ in
             translator.triggerTranslation()
         }
