@@ -275,6 +275,15 @@ struct TargetArea: View {
         }
         .frame(maxWidth: .infinity, minHeight: 40, maxHeight: .infinity)
         .background(Color.accentColor.opacity(0.06))
+        .overlay(alignment: .bottomTrailing) {
+            if !translator.translatedText.isEmpty {
+                Text("\(translator.translatedText.count) 字")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+            }
+        }
     }
 }
 
