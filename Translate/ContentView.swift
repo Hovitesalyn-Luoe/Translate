@@ -53,7 +53,7 @@ struct TranslationView: View {
     @EnvironmentObject private var translator: Translator
     @FocusState private var sourceFocused: Bool
     @State private var didAutoFocus = false
-    @State private var sourceHeight: CGFloat = 200
+    @AppStorage("translate.sourceHeight") private var sourceHeight: Double = 200
     @State private var dragStartHeight: CGFloat?
 
     /// 输入框和译文框之间的分隔条：上下拖动调高度
@@ -78,9 +78,9 @@ struct TranslationView: View {
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .global)
                     .onChanged { value in
-                        if dragStartHeight == nil { dragStartHeight = sourceHeight }
-                        let base = dragStartHeight ?? sourceHeight
-                        sourceHeight = min(max(40, base + value.translation.height), upperBound)
+                        if dragStartHeight == nil { dragStartHeight = CGFloat(sourceHeight) }
+                        let base = dragStartHeight ?? CGFloat(sourceHeight)
+                        sourceHeight = Double(min(max(40, base + value.translation.height), upperBound))
                     }
                     .onEnded { _ in dragStartHeight = nil }
             )
@@ -97,7 +97,7 @@ struct TranslationView: View {
                 let upperBound = max(40, geo.size.height - 14 - 40)
                 VStack(spacing: 0) {
                     SourceArea(focused: $sourceFocused)
-                        .frame(height: min(max(40, sourceHeight), upperBound))
+                        .frame(height: min(max(40, CGFloat(sourceHeight)), upperBound))
                     splitHandle(upperBound: upperBound)
                     TargetArea()
                         .frame(maxHeight: .infinity)
