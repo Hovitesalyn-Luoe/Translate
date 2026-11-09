@@ -52,16 +52,15 @@ struct TranslationView: View {
     @EnvironmentObject private var translator: Translator
     @FocusState private var sourceFocused: Bool
     @State private var didAutoFocus = false
-    @AppStorage("translate.sourceHeight") private var sourceHeight: Double = 200
     /// VSplitView 不暴露初始分隔位置，这里等它布局完，直接找底下的 NSSplitView 摆回去
     private func restoreSplitPosition() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             guard let window = NSApp.windows.first(where: { $0.isVisible }),
                   let split = Self.findSplitView(in: window.contentView) else { return }
-            let total = split.bounds.height
-            guard total > 60 else { return }
-            let target = min(max(40, CGFloat(sourceHeight)), total - 40)
-            split.setPosition(target, ofDividerAt: 0)
+            // 让 NSSplitView 自己记住分隔位置，比手动记录可靠
+            if split.autosaveName == nil {
+                split.autosaveName = NSSplitView.AutosaveName("TranslateSplit")
+            }
         }
     }
 
@@ -84,9 +83,6 @@ struct TranslationView: View {
             VSplitView {
                 SourceArea(focused: $sourceFocused)
                     .frame(minHeight: 40, maxHeight: .infinity)
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { newHeight in
-                        if newHeight > 39 { sourceHeight = Double(newHeight) }
-                    }
                 TargetArea()
                     .frame(minHeight: 40, maxHeight: .infinity)
             }
