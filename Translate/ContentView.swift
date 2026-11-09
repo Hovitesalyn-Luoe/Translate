@@ -54,38 +54,6 @@ struct TranslationView: View {
     @FocusState private var sourceFocused: Bool
     @State private var didAutoFocus = false
     @AppStorage("translate.sourceHeight") private var sourceHeight: Double = 200
-    @State private var dragStartHeight: CGFloat?
-
-    /// 输入框和译文框之间的分隔条：上下拖动调高度
-    private func splitHandle(upperBound: CGFloat) -> some View {
-        Rectangle()
-            .fill(Color.clear)
-            .frame(height: 14)
-            .contentShape(Rectangle())
-            .overlay {
-                Capsule()
-                    .fill(Color.primary.opacity(0.16))
-                    .frame(width: 36, height: 4)
-            }
-            .onContinuousHover { phase in
-                switch phase {
-                case .active:
-                    NSCursor.resizeUpDown.set()
-                case .ended:
-                    NSCursor.arrow.set()
-                }
-            }
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                    .onChanged { value in
-                        if dragStartHeight == nil { dragStartHeight = CGFloat(sourceHeight) }
-                        let base = dragStartHeight ?? CGFloat(sourceHeight)
-                        sourceHeight = Double(min(max(40, base + value.translation.height), upperBound))
-                    }
-                    .onEnded { _ in dragStartHeight = nil }
-            )
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             LanguageBar()
@@ -93,15 +61,16 @@ struct TranslationView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 9)
 
-            GeometryReader { geo in
-                let upperBound = max(40, geo.size.height - 14 - 40)
-                VStack(spacing: 0) {
-                    SourceArea(focused: $sourceFocused)
-                        .frame(height: min(max(40, CGFloat(sourceHeight)), upperBound))
-                    splitHandle(upperBound: upperBound)
-                    TargetArea()
-                        .frame(maxHeight: .infinity)
-                }
+            VSplitView {
+                SourceArea(focused: $sourceFocused)
+                    .frame(minHeight: 40, idealHeight: CGFloat(sourceHeight), maxHeight: .infinity)
+                    .padding(.bottom, 5)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { newHeight in
+                        if newHeight > 39 { sourceHeight = Double(newHeight) }
+                    }
+                TargetArea()
+                    .frame(minHeight: 40, maxHeight: .infinity)
+                    .padding(.top, 5)
             }
             .padding(.horizontal, 22)
 
